@@ -19,9 +19,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/krapie/plumber/internal"
 )
 
 var cfgFile string
@@ -34,7 +37,24 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Plumber is a L7 load balancer from scratch in Go.")
+		backendList, err := cmd.Flags().GetString("backends")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		backendAddresses := strings.Split(backendList, ",")
+
+		agent, err := internal.NewAgent()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if err = agent.Run(backendAddresses); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	},
 }
 
@@ -59,6 +79,8 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	rootCmd.Flags().String("backends", "", "Backend address")
 }
 
 // initConfig reads in config file and ENV variables if set.
