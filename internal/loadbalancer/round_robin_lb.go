@@ -1,7 +1,7 @@
 package loadbalancer
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/krapie/plumber/internal/backend"
@@ -29,7 +29,7 @@ func (lb *RoundRobinLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 		panic("No backends")
 	}
 
-	fmt.Println("[LoadBalancer] Serving request to backend", lb.backends[lb.index].Addr)
+	log.Printf("[LoadBalancer] Serving request to backend %s", lb.backends[lb.index].Addr)
 
 	lb.index = (lb.index + 1) % len(lb.backends)
 	lb.backends[lb.index].Serve(rw, req)

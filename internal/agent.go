@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/krapie/plumber/internal/backend"
@@ -36,7 +37,8 @@ func (s *Agent) Run(backendAddresses []string) error {
 	}
 
 	http.HandleFunc("/", s.lb.ServeProxy)
-	err := http.ListenAndServe(":8080", nil)
+	log.Printf("[Plumber] Starting server on :80")
+	err := http.ListenAndServe(":80", nil)
 	if err != nil {
 		return err
 	}

@@ -1,2 +1,2 @@
 build:
-	go build -o ./bin/plumber .
+	CGO_ENABLED=0 go build -o ./bin/plumber .
