@@ -9,5 +9,6 @@ import (
 // LoadBalancer is an interface for a load balancer.
 type LoadBalancer interface {
 	AddBackend(b *backend.Backend) error
+	GetBackends() []*backend.Backend
 	ServeProxy(rw http.ResponseWriter, req *http.Request)
 }

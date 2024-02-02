@@ -25,18 +25,18 @@ make build
 Plumber aims to support [Yorkie](https://github.com/yorkie-team/yorkie) as a backend for the load balancer.
 The following features are planned to be implemented first:
 
-### v0.0.1
-
-- [ ] Support static load balancing with round-robin algorithm
-- [ ] Support backends health check 
-
 ### v0.1.0
+
+- [x] Support static load balancing with round-robin algorithm
+- [x] Support backends health check 
+
+### v0.2.0
 
 - [ ] Support consistent hashing algorithm
 - [ ] Support dynamic backend configuration (with K8s API)
 - [ ] Support mechanism to resolve split-brain of long-lived connection
 
-### v0.2.0
+### v0.3.0
 
 - [ ] Support interceptor to modify request/response
 - [ ] TBD
