@@ -3,13 +3,14 @@ package loadbalancer
 import (
 	"log"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/krapie/plumber/internal/backend"
 )
 
 type RoundRobinLB struct {
 	backends            []*backend.Backend
-	index               int
+	index               uint64
 	healthCheckInterval int
 }
 
@@ -44,11 +45,18 @@ func (lb *RoundRobinLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 
 func (lb *RoundRobinLB) getNextBackend() *backend.Backend {
 	for i := 0; i < len(lb.backends); i++ {
-		lb.index = (lb.index + 1) % len(lb.backends)
-		if lb.backends[lb.index].IsAlive() {
-			return lb.backends[lb.index]
+		index := lb.getNextIndex()
+		if lb.backends[index].IsAlive() {
+			return lb.backends[index]
 		}
 	}
 
 	return nil
+}
+
+func (lb *RoundRobinLB) getNextIndex() uint64 {
+	index := atomic.AddUint64(&lb.index, uint64(1)) % uint64(len(lb.backends))
+	atomic.StoreUint64(&lb.index, index)
+
+	return index
 }
