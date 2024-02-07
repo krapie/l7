@@ -9,3 +9,9 @@ docker-compose-up:
 
 docker-compose-down:
 	docker-compose -f ./docker/docker-compose.yml down
+
+docker-compose-yorkie-up:
+	docker-compose -f ./docker/docker-compose-yorkie.yml up --build -d
+
+docker-compose-yorkie-down:
+	docker-compose -f ./docker/docker-compose-yorkie.yml down

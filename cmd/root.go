@@ -43,6 +43,12 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		targetBackendImage, err := cmd.Flags().GetString("target-backend-image")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		backendList, err := cmd.Flags().GetString("backends")
 		if err != nil {
 			fmt.Println(err)
@@ -51,13 +57,13 @@ var rootCmd = &cobra.Command{
 
 		backendAddresses := strings.Split(backendList, ",")
 
-		agent, err := internal.NewAgent()
+		agent, err := internal.NewAgent(serviceDiscovery, targetBackendImage)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		if err = agent.Run(serviceDiscovery, backendAddresses); err != nil {
+		if err = agent.Run(backendAddresses); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -87,7 +93,9 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.Flags().String("backends", "", "Backend address")
+
 	rootCmd.Flags().BoolP("service-discovery", "s", true, "Enable service discovery")
+	rootCmd.Flags().String("target-backend-image", "traefik/whoami", "Target backend image for service discovery")
 }
 
 // initConfig reads in config file and ENV variables if set.

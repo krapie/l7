@@ -17,7 +17,6 @@ import (
 
 // TODO(krapie): we termporay use this image for testing, but we can make it configurable
 const (
-	IMAGE  = "traefik/whoami"
 	SCHEME = "http"
 	IP     = "0.0.0.0"
 )
@@ -30,6 +29,8 @@ type Register struct {
 	DockerClient    *client.Client
 	ServiceRegistry *registry.BackendRegistry
 	AdditionalTable registry.Table
+
+	Target string
 }
 
 func NewRegister() (*Register, error) {
@@ -41,6 +42,10 @@ func NewRegister() (*Register, error) {
 	return &Register{
 		DockerClient: dockerCLI,
 	}, nil
+}
+
+func (r *Register) SetTarget(target string) {
+	r.Target = target
 }
 
 func (r *Register) SetRegistry(registry *registry.BackendRegistry) {
@@ -59,7 +64,7 @@ func (r *Register) Initialize() error {
 	containerList, err := r.DockerClient.ContainerList(context.Background(), container.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("status", "running"),
-			filters.Arg("ancestor", IMAGE),
+			filters.Arg("ancestor", r.Target),
 		),
 	})
 	if err != nil {
@@ -93,7 +98,7 @@ func (r *Register) observe() {
 	msgCh, errCh := r.DockerClient.Events(context.Background(), types.EventsOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("type", "container"),
-			filters.Arg("image", IMAGE),
+			filters.Arg("image", r.Target),
 			filters.Arg("event", "start"),
 			filters.Arg("event", "kill"),
 		),
@@ -103,7 +108,6 @@ func (r *Register) observe() {
 		select {
 		case msg := <-msgCh:
 			if msg.Action == events.ActionKill {
-				log.Printf("[Register] Removing backend %s", msg.Actor.ID)
 				r.ServiceRegistry.RemoveBackendByID(msg.Actor.ID)
 				if r.AdditionalTable != nil {
 					err := r.AdditionalTable.Remove(msg.Actor.ID)

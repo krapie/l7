@@ -22,7 +22,7 @@ type MaglevLB struct {
 	lookupTable *Maglev
 }
 
-func NewLB() (*MaglevLB, error) {
+func NewLB(targetBackendImage string) (*MaglevLB, error) {
 	lookupTable, err := NewMaglev([]string{}, MinVirtualNodes)
 	if err != nil {
 		return nil, err
@@ -34,6 +34,7 @@ func NewLB() (*MaglevLB, error) {
 		return nil, err
 	}
 
+	backendRegister.SetTarget(targetBackendImage)
 	backendRegister.SetRegistry(backendRegistry)
 	backendRegister.SetAdditionalTable(lookupTable)
 	err = backendRegister.Initialize()
@@ -91,8 +92,7 @@ func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 	// TODO(krapie): Move key extraction from http request header to separate system
 	key := req.Header.Get("X-Shard-Key")
 	if key == "" {
-		http.Error(rw, "No shard key provided", http.StatusBadRequest)
-		return
+		key = "default"
 	}
 
 	backendKey, err := lb.lookupTable.Get(key)

@@ -21,13 +21,14 @@ type RoundRobinLB struct {
 	index int64
 }
 
-func NewLB() (*RoundRobinLB, error) {
+func NewLB(targetBackendImage string) (*RoundRobinLB, error) {
 	backendRegistry := registry.NewRegistry()
 	backendRegister, err := docker.NewRegister()
 	if err != nil {
 		return nil, err
 	}
 
+	backendRegister.SetTarget(targetBackendImage)
 	backendRegister.SetRegistry(backendRegistry)
 	err = backendRegister.Initialize()
 	if err != nil {
