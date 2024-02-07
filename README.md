@@ -15,9 +15,25 @@ make build
 
 ## Usage
 
+Basic usage:
+
 ```bash
 # Start the load balancer with 2 backends
 ./bin/plumber --backends http://localhost:8080,http://localhost:8081
+```
+
+Docker-compose testing:
+
+```bash
+# Test the load balancer with docker-compose
+make docker-compose-up
+
+# Start the load balancer
+./bin/plumber
+
+# Send a request to the load balancer
+chmod +x ./scripts/lb_distribution_test.sh
+./scripts/lb_distribution_test.sh
 ```
 
 ## Roadmap
@@ -32,11 +48,16 @@ The following features are planned to be implemented first:
 
 ### v0.2.0
 
-- [x] Support consistent hashing algorithm (maglev with siphash)
-- [ ] Support dynamic backend configuration (with K8s API)
+- [x] Support consistent hashing algorithm with maglev
+- [x] Support backend service discovery with Docker API
 - [ ] Support mechanism to resolve split-brain of long-lived connection
 
 ### v0.3.0
 
 - [ ] Support interceptor to modify request/response
+- [ ] Support service discovery with Kubernetes API
+
+### v0.x.x
+
+- [ ] Support rate limiter
 - [ ] TBD

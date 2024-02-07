@@ -5,31 +5,75 @@ import (
 	"net/http"
 
 	"github.com/krapie/plumber/internal/backend"
+	"github.com/krapie/plumber/internal/backend/health"
+	"github.com/krapie/plumber/internal/backend/register"
+	"github.com/krapie/plumber/internal/backend/register/docker"
+	"github.com/krapie/plumber/internal/backend/registry"
+)
+
+const (
+	MinVirtualNodes = 65537
 )
 
 type MaglevLB struct {
-	backends            map[string]*backend.Backend
-	lookupTable         *Maglev
-	healthCheckInterval int
+	backendRegistry *registry.BackendRegistry
+	backendRegister register.Register
+
+	lookupTable *Maglev
 }
 
 func NewLB() (*MaglevLB, error) {
-	lookupTable, err := NewMaglev([]string{}, 65537)
+	lookupTable, err := NewMaglev([]string{}, MinVirtualNodes)
 	if err != nil {
 		return nil, err
 	}
 
+	backendRegistry := registry.NewRegistry()
+	backendRegister, err := docker.NewRegister()
+	if err != nil {
+		return nil, err
+	}
+
+	backendRegister.SetRegistry(backendRegistry)
+	backendRegister.SetAdditionalTable(lookupTable)
+	err = backendRegister.Initialize()
+	if err != nil {
+		return nil, err
+	}
+
+	backendRegister.Observe()
+	log.Printf("[LoadBalancer] Running backend register")
+
+	healthChecker := health.NewHealthChecker(backendRegistry, 2)
+	healthChecker.Run()
+	log.Printf("[LoadBalancer] Running health check")
+
 	return &MaglevLB{
-		backends:            make(map[string]*backend.Backend),
-		lookupTable:         lookupTable,
-		healthCheckInterval: 2,
+		backendRegistry: backendRegistry,
+		backendRegister: backendRegister,
+
+		lookupTable: lookupTable,
 	}, nil
 }
 
 func (lb *MaglevLB) AddBackend(b *backend.Backend) error {
-	lb.backends[b.Addr.String()] = b
+	err := lb.backendRegistry.AddBackend(b.ID, b.Addr.String())
+	if err != nil {
+		return err
+	}
 
-	err := lb.lookupTable.Add(b.Addr.String())
+	err = lb.lookupTable.Add(b.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (lb *MaglevLB) RemoveBackend(b *backend.Backend) error {
+	lb.backendRegistry.RemoveBackendByID(b.ID)
+
+	err := lb.lookupTable.Remove(b.ID)
 	if err != nil {
 		return err
 	}
@@ -38,12 +82,7 @@ func (lb *MaglevLB) AddBackend(b *backend.Backend) error {
 }
 
 func (lb *MaglevLB) GetBackends() []*backend.Backend {
-	var backends []*backend.Backend
-	for _, b := range lb.backends {
-		backends = append(backends, b)
-	}
-
-	return backends
+	return lb.backendRegistry.GetBackends()
 }
 
 // ServeProxy serves the request to the next backend in the list
@@ -51,17 +90,22 @@ func (lb *MaglevLB) GetBackends() []*backend.Backend {
 func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 	// TODO(krapie): Move key extraction from http request header to separate system
 	key := req.Header.Get("X-Shard-Key")
+	if key == "" {
+		http.Error(rw, "No shard key provided", http.StatusBadRequest)
+		return
+	}
+
 	backendKey, err := lb.lookupTable.Get(key)
 	if err != nil {
 		http.Error(rw, "Error getting backend", http.StatusInternalServerError)
 		return
 	}
 
-	if b := lb.backends[backendKey]; b != nil {
-		log.Printf("[LoadBalancer] Serving request to backend %s", b.Addr.String())
-		b.Serve(rw, req)
+	b, exists := lb.backendRegistry.GetBackendByID(backendKey)
+	if !exists {
+		http.Error(rw, "No backends available", http.StatusServiceUnavailable)
 		return
 	}
 
-	http.Error(rw, "No backends available", http.StatusServiceUnavailable)
+	b.Serve(rw, req)
 }

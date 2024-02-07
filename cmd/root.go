@@ -37,6 +37,12 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		serviceDiscovery, err := cmd.Flags().GetBool("service-discovery")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		backendList, err := cmd.Flags().GetString("backends")
 		if err != nil {
 			fmt.Println(err)
@@ -51,7 +57,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if err = agent.Run(backendAddresses); err != nil {
+		if err = agent.Run(serviceDiscovery, backendAddresses); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -81,6 +87,7 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.Flags().String("backends", "", "Backend address")
+	rootCmd.Flags().BoolP("service-discovery", "s", true, "Enable service discovery")
 }
 
 // initConfig reads in config file and ENV variables if set.

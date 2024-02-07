@@ -6,28 +6,25 @@ import (
 	"time"
 
 	"github.com/krapie/plumber/internal/backend"
+	"github.com/krapie/plumber/internal/backend/registry"
 )
 
 const TCP = "tcp"
 
 type Checker struct {
-	backends []*backend.Backend
-	interval int
+	backendRegistry *registry.BackendRegistry
+	interval        int
 }
 
-func NewHealthChecker(interval int) *Checker {
+func NewHealthChecker(registry *registry.BackendRegistry, interval int) *Checker {
 	return &Checker{
-		backends: nil,
-		interval: interval,
+		backendRegistry: registry,
+		interval:        interval,
 	}
 }
 
 func (c *Checker) Run() {
 	go c.healthCheck()
-}
-
-func (c *Checker) AddBackends(backends []*backend.Backend) {
-	c.backends = backends
 }
 
 func (c *Checker) healthCheck() {
@@ -42,7 +39,7 @@ func (c *Checker) healthCheck() {
 }
 
 func (c *Checker) checkBackendLiveness() {
-	for _, b := range c.backends {
+	for _, b := range c.backendRegistry.GetBackends() {
 		isAlive := c.checkTCPConnection(b.Addr, c.interval)
 		if isAlive {
 			b.SetAlive(backend.ALIVE_UP)

@@ -1,23 +1,29 @@
 version: '3.3'
 
 services:
-  plumber-proxy:
-    image: krapi0314/plumber
-    container_name: plumber
-    command:
-      - "--backends"
-      - "http://server-1:80,http://server-2:80,http://server-3:80"
-    ports:
-      - "80:80"
+#  plumber-proxy:
+#    image: krapi0314/plumber
+#    container_name: plumber
+#    command:
+#      - "--backends"
+#      - "http://server-1:80,http://server-2:80,http://server-3:80"
+#    ports:
+#      - "80:80"
   server-1:
     image: traefik/whoami
     hostname: server-1
+    ports:
+      - "8080:80"
   server-2:
     image: traefik/whoami
     hostname: server-2
+    ports:
+      - "8081:80"
   server-3:
     image: traefik/whoami
     hostname: server-3
+    ports:
+      - "8082:80"
 
 networks:
   plumber:

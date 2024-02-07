@@ -13,6 +13,7 @@ const (
 )
 
 type Backend struct {
+	ID    string
 	Addr  *url.URL
 	Alive bool
 
@@ -20,7 +21,7 @@ type Backend struct {
 	proxy *httputil.ReverseProxy
 }
 
-func NewDefaultBackend(addr string) (*Backend, error) {
+func NewDefaultBackend(ID, addr string) (*Backend, error) {
 	parsedAddr, err := url.Parse(addr)
 	if err != nil {
 		return nil, err
@@ -32,6 +33,7 @@ func NewDefaultBackend(addr string) (*Backend, error) {
 	}
 
 	return &Backend{
+		ID:    ID,
 		Addr:  parsedAddr,
 		Alive: true,
 

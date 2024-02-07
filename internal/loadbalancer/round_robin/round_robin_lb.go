@@ -6,29 +6,62 @@ import (
 	"sync/atomic"
 
 	"github.com/krapie/plumber/internal/backend"
+	"github.com/krapie/plumber/internal/backend/health"
+	"github.com/krapie/plumber/internal/backend/register"
+	"github.com/krapie/plumber/internal/backend/register/docker"
+	"github.com/krapie/plumber/internal/backend/registry"
 )
 
 type RoundRobinLB struct {
-	backends            []*backend.Backend
-	index               uint64
-	healthCheckInterval int
+	backendRegistry *registry.BackendRegistry
+	backendRegister register.Register
+
+	healthChecker *health.Checker
+
+	index int64
 }
 
 func NewLB() (*RoundRobinLB, error) {
+	backendRegistry := registry.NewRegistry()
+	backendRegister, err := docker.NewRegister()
+	if err != nil {
+		return nil, err
+	}
+
+	backendRegister.SetRegistry(backendRegistry)
+	err = backendRegister.Initialize()
+	if err != nil {
+		return nil, err
+	}
+
+	backendRegister.Observe()
+	log.Printf("[LoadBalancer] Running backend register")
+
+	healthChecker := health.NewHealthChecker(backendRegistry, 2)
+	healthChecker.Run()
+	log.Printf("[LoadBalancer] Running health check")
+
 	return &RoundRobinLB{
-		backends:            []*backend.Backend{},
-		index:               0,
-		healthCheckInterval: 2,
+		backendRegistry: backendRegistry,
+		backendRegister: backendRegister,
+
+		healthChecker: healthChecker,
+
+		index: 0,
 	}, nil
 }
 
 func (lb *RoundRobinLB) AddBackend(b *backend.Backend) error {
-	lb.backends = append(lb.backends, b)
+	err := lb.backendRegistry.AddBackend(b.ID, b.Addr.String())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (lb *RoundRobinLB) GetBackends() []*backend.Backend {
-	return lb.backends
+	return lb.backendRegistry.GetBackends()
 }
 
 // ServeProxy serves the request to the next backend in the list
@@ -44,19 +77,25 @@ func (lb *RoundRobinLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (lb *RoundRobinLB) getNextBackend() *backend.Backend {
-	for i := 0; i < len(lb.backends); i++ {
+	for i := 0; i < lb.backendRegistry.Len(); i++ {
 		index := lb.getNextIndex()
-		if lb.backends[index].IsAlive() {
-			return lb.backends[index]
+
+		b, err := lb.backendRegistry.GetBackendByIndex(index)
+		if err != nil {
+			return nil
+		}
+
+		if b.IsAlive() {
+			return b
 		}
 	}
 
 	return nil
 }
 
-func (lb *RoundRobinLB) getNextIndex() uint64 {
-	index := atomic.AddUint64(&lb.index, uint64(1)) % uint64(len(lb.backends))
-	atomic.StoreUint64(&lb.index, index)
+func (lb *RoundRobinLB) getNextIndex() int64 {
+	index := atomic.AddInt64(&lb.index, int64(1)) % int64(lb.backendRegistry.Len())
+	atomic.StoreInt64(&lb.index, index)
 
 	return index
 }
