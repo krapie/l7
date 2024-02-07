@@ -7,6 +7,7 @@ import (
 	"github.com/krapie/plumber/internal/backend"
 	"github.com/krapie/plumber/internal/health"
 	"github.com/krapie/plumber/internal/loadbalancer"
+	"github.com/krapie/plumber/internal/loadbalancer/maglev"
 )
 
 type Agent struct {
@@ -15,7 +16,7 @@ type Agent struct {
 }
 
 func NewAgent() (*Agent, error) {
-	loadBalancer, err := loadbalancer.NewRoundRobinLB()
+	loadBalancer, err := maglev.NewLB()
 	if err != nil {
 		return nil, err
 	}

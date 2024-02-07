@@ -1,4 +1,4 @@
-package loadbalancer
+package round_robin
 
 import (
 	"log"
@@ -14,7 +14,7 @@ type RoundRobinLB struct {
 	healthCheckInterval int
 }
 
-func NewRoundRobinLB() (*RoundRobinLB, error) {
+func NewLB() (*RoundRobinLB, error) {
 	return &RoundRobinLB{
 		backends:            []*backend.Backend{},
 		index:               0,
@@ -35,7 +35,7 @@ func (lb *RoundRobinLB) GetBackends() []*backend.Backend {
 // keep in mind that this function and its sub functions need to be thread safe
 func (lb *RoundRobinLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 	if b := lb.getNextBackend(); b != nil {
-		log.Printf("[LoadBalancer] Serving request to backend %s", lb.backends[lb.index].Addr)
+		log.Printf("[LoadBalancer] Serving request to backend %s", b.Addr.String())
 		b.Serve(rw, req)
 		return
 	}

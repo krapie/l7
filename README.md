@@ -32,7 +32,7 @@ The following features are planned to be implemented first:
 
 ### v0.2.0
 
-- [ ] Support consistent hashing algorithm
+- [x] Support consistent hashing algorithm (maglev with siphash)
 - [ ] Support dynamic backend configuration (with K8s API)
 - [ ] Support mechanism to resolve split-brain of long-lived connection
 
