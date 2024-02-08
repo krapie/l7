@@ -19,7 +19,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,33 +36,19 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		serviceDiscovery, err := cmd.Flags().GetBool("service-discovery")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
 		targetBackendImage, err := cmd.Flags().GetString("target-backend-image")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		backendList, err := cmd.Flags().GetString("backends")
+		agent, err := internal.NewAgent(targetBackendImage)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		backendAddresses := strings.Split(backendList, ",")
-
-		agent, err := internal.NewAgent(serviceDiscovery, targetBackendImage)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		if err = agent.Run(backendAddresses); err != nil {
+		if err = agent.Run(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -92,9 +77,6 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	rootCmd.Flags().String("backends", "", "Backend address")
-
-	rootCmd.Flags().BoolP("service-discovery", "s", true, "Enable service discovery")
 	rootCmd.Flags().String("target-backend-image", "traefik/whoami", "Target backend image for service discovery")
 }
 

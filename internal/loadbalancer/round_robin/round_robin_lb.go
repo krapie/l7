@@ -52,19 +52,6 @@ func NewLB(targetBackendImage string) (*RoundRobinLB, error) {
 	}, nil
 }
 
-func (lb *RoundRobinLB) AddBackend(b *backend.Backend) error {
-	err := lb.backendRegistry.AddBackend(b.ID, b.Addr.String())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (lb *RoundRobinLB) GetBackends() []*backend.Backend {
-	return lb.backendRegistry.GetBackends()
-}
-
 // ServeProxy serves the request to the next backend in the list
 // keep in mind that this function and its sub functions need to be thread safe
 func (lb *RoundRobinLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {

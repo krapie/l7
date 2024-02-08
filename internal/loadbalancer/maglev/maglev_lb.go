@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/krapie/plumber/internal/backend"
 	"github.com/krapie/plumber/internal/backend/health"
 	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/register/docker"
@@ -55,35 +54,6 @@ func NewLB(targetBackendImage string) (*MaglevLB, error) {
 
 		lookupTable: lookupTable,
 	}, nil
-}
-
-func (lb *MaglevLB) AddBackend(b *backend.Backend) error {
-	err := lb.backendRegistry.AddBackend(b.ID, b.Addr.String())
-	if err != nil {
-		return err
-	}
-
-	err = lb.lookupTable.Add(b.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (lb *MaglevLB) RemoveBackend(b *backend.Backend) error {
-	lb.backendRegistry.RemoveBackendByID(b.ID)
-
-	err := lb.lookupTable.Remove(b.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (lb *MaglevLB) GetBackends() []*backend.Backend {
-	return lb.backendRegistry.GetBackends()
 }
 
 // ServeProxy serves the request to the next backend in the list

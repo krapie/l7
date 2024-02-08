@@ -18,18 +18,19 @@ make build
 Basic usage:
 
 ```bash
-# Start the load balancer with 2 backends
-./bin/plumber --backends http://localhost:8080,http://localhost:8081
+# Start the load balancer
+./bin/plumber
 ```
 
-Docker-compose testing:
+To test plumber, you need server instances managed by Docker.
+You can use the following command to start the server instances:
 
 ```bash
 # Test the load balancer with docker-compose
 make docker-compose-up
 
-# Start the load balancer
-./bin/plumber
+# Start the load balancer with target backend image for service discovery
+./bin/plumber --target-backend-image yorkieteam/yorkie
 
 # Send a request to the load balancer
 chmod +x ./scripts/lb_distribution_test.sh
@@ -59,5 +60,4 @@ The following features are planned to be implemented first:
 
 ### v0.x.x
 
-- [ ] Support rate limiter
 - [ ] TBD
