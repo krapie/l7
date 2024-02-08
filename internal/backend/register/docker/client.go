@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
+	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/registry"
 )
 
@@ -28,7 +29,7 @@ var (
 type Register struct {
 	DockerClient    *client.Client
 	ServiceRegistry *registry.BackendRegistry
-	AdditionalTable registry.Table
+	EventChannel    chan register.BackendEvent
 
 	Target string
 }
@@ -41,7 +42,13 @@ func NewRegister() (*Register, error) {
 
 	return &Register{
 		DockerClient: dockerCLI,
+
+		EventChannel: make(chan register.BackendEvent),
 	}, nil
+}
+
+func (r *Register) GetEventChannel() chan register.BackendEvent {
+	return r.EventChannel
 }
 
 func (r *Register) SetTarget(target string) {
@@ -50,10 +57,6 @@ func (r *Register) SetTarget(target string) {
 
 func (r *Register) SetRegistry(registry *registry.BackendRegistry) {
 	r.ServiceRegistry = registry
-}
-
-func (r *Register) SetAdditionalTable(table registry.Table) {
-	r.AdditionalTable = table
 }
 
 func (r *Register) Initialize() error {
@@ -78,11 +81,9 @@ func (r *Register) Initialize() error {
 			return err
 		}
 
-		if r.AdditionalTable != nil {
-			err = r.AdditionalTable.Add(c.ID)
-			if err != nil {
-				return err
-			}
+		r.EventChannel <- register.BackendEvent{
+			EventType: register.BackendAddedEvent,
+			Actor:     c.ID,
 		}
 	}
 
@@ -109,14 +110,10 @@ func (r *Register) observe() {
 		case msg := <-msgCh:
 			if msg.Action == events.ActionKill {
 				r.ServiceRegistry.RemoveBackendByID(msg.Actor.ID)
-				if r.AdditionalTable != nil {
-					err := r.AdditionalTable.Remove(msg.Actor.ID)
-					if err != nil {
-						log.Printf("[Register] Error removing backend from additional table: %s", err)
-						continue
-					}
+				r.EventChannel <- register.BackendEvent{
+					EventType: register.BackendRemovedEvent,
+					Actor:     msg.Actor.ID,
 				}
-
 			} else if msg.Action == events.ActionStart {
 				c, err := r.DockerClient.ContainerList(context.Background(), container.ListOptions{
 					Filters: filters.NewArgs(
@@ -136,12 +133,9 @@ func (r *Register) observe() {
 					log.Printf("[Register] Error adding backend: %s", err)
 					continue
 				}
-				if r.AdditionalTable != nil {
-					err = r.AdditionalTable.Add(c[0].ID)
-					if err != nil {
-						log.Printf("[Register] Error adding backend to additional table: %s", err)
-						continue
-					}
+				r.EventChannel <- register.BackendEvent{
+					EventType: register.BackendAddedEvent,
+					Actor:     c[0].ID,
 				}
 			}
 		case err := <-errCh:

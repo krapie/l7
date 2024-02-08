@@ -22,19 +22,41 @@ Basic usage:
 ./bin/plumber
 ```
 
-To test plumber, you need server instances managed by Docker.
-You can use the following command to start the server instances:
+Basic usage with docker-compose:
 
 ```bash
 # Test the load balancer with docker-compose
 make docker-compose-up
 
 # Start the load balancer with target backend image for service discovery
-./bin/plumber --target-backend-image yorkieteam/yorkie
+./bin/plumber --target-backend-image traefik/whoami
 
 # Send a request to the load balancer
 chmod +x ./scripts/lb_distribution_test.sh
 ./scripts/lb_distribution_test.sh
+
+# Cleanup the docker-compose
+make docker-compose-down
+```
+
+Yorkie usage with docker-compose:
+
+```bash
+# Test the load balancer with docker-compose
+make docker-compose-yorkie-up
+
+# Start the load balancer with target backend image for service discovery
+./bin/plumber --target-backend-image yorkieteam/yorkie
+
+# Test with yorkie-js-sdk
+git clone https://github.com/yorkie-team/yorkie-js-sdk.git
+cd yorkie-js-sdk
+npm install
+sed -i html 's#http://localhost:8080#http://localhost#g' ./public/index.html
+npm run dev
+
+# Cleanup the docker-compose
+make docker-compose-yorkie-down
 ```
 
 ## Roadmap
@@ -51,7 +73,7 @@ The following features are planned to be implemented first:
 
 - [x] Support consistent hashing algorithm with maglev
 - [x] Support backend service discovery with Docker API
-- [ ] Support mechanism to resolve split-brain of long-lived connection
+- [x] Support mechanism to resolve split-brain of long-lived connection
 
 ### v0.3.0
 

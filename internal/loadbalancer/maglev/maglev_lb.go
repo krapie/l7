@@ -2,6 +2,7 @@ package maglev
 
 import (
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/krapie/plumber/internal/backend/health"
@@ -14,11 +15,21 @@ const (
 	MinVirtualNodes = 65537
 )
 
+// TODO(krapie): temporary store all connections in global variable
+var connections = make(map[string]net.Conn)
+
+type Connection struct {
+	conn      net.Conn
+	key       string
+	backendID string
+}
+
 type MaglevLB struct {
 	backendRegistry *registry.BackendRegistry
 	backendRegister register.Register
 
-	lookupTable *Maglev
+	lookupTable       *Maglev
+	streamConnections []*Connection
 }
 
 func NewLB(targetBackendImage string) (*MaglevLB, error) {
@@ -33,9 +44,17 @@ func NewLB(targetBackendImage string) (*MaglevLB, error) {
 		return nil, err
 	}
 
+	lb := &MaglevLB{
+		backendRegistry: backendRegistry,
+		backendRegister: backendRegister,
+
+		lookupTable:       lookupTable,
+		streamConnections: []*Connection{},
+	}
+	lb.RunWatchEventLoop()
+
 	backendRegister.SetTarget(targetBackendImage)
 	backendRegister.SetRegistry(backendRegistry)
-	backendRegister.SetAdditionalTable(lookupTable)
 	err = backendRegister.Initialize()
 	if err != nil {
 		return nil, err
@@ -48,12 +67,7 @@ func NewLB(targetBackendImage string) (*MaglevLB, error) {
 	healthChecker.Run()
 	log.Printf("[LoadBalancer] Running health check")
 
-	return &MaglevLB{
-		backendRegistry: backendRegistry,
-		backendRegister: backendRegister,
-
-		lookupTable: lookupTable,
-	}, nil
+	return lb, nil
 }
 
 // ServeProxy serves the request to the next backend in the list
@@ -65,17 +79,79 @@ func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 		key = "default"
 	}
 
-	backendKey, err := lb.lookupTable.Get(key)
+	backendID, err := lb.lookupTable.Get(key)
 	if err != nil {
 		http.Error(rw, "Error getting backend", http.StatusInternalServerError)
 		return
 	}
 
-	b, exists := lb.backendRegistry.GetBackendByID(backendKey)
+	if req.URL.Path == "/yorkie.v1.YorkieService/WatchDocument" {
+		conn := GetConn(req)
+		lb.streamConnections = append(lb.streamConnections, &Connection{
+			conn:      conn,
+			key:       key,
+			backendID: backendID,
+		})
+	}
+
+	b, exists := lb.backendRegistry.GetBackendByID(backendID)
 	if !exists {
 		http.Error(rw, "No backends available", http.StatusServiceUnavailable)
 		return
 	}
 
 	b.Serve(rw, req)
+}
+
+func (lb *MaglevLB) RunWatchEventLoop() {
+	go lb.watchBackendEvent()
+}
+
+func (lb *MaglevLB) watchBackendEvent() {
+	eventChannel := lb.backendRegister.GetEventChannel()
+	for {
+		select {
+		case event := <-eventChannel:
+			switch event.EventType {
+			case register.BackendAddedEvent:
+				err := lb.lookupTable.Add(event.Actor)
+				if err != nil {
+					log.Printf("[LoadBalancer] Error adding backend to lookup table: %s", err)
+				}
+				lb.closeSplitBrainedConnection()
+			case register.BackendRemovedEvent:
+				err := lb.lookupTable.Remove(event.Actor)
+				if err != nil {
+					log.Printf("[LoadBalancer] Error removing backend from lookup table: %s", err)
+				}
+			}
+		}
+	}
+}
+
+func (lb *MaglevLB) closeSplitBrainedConnection() {
+	// check connections and close if recalculated maglev hashed output(backend ID)
+	// for the key is different from the connection's backend ID
+	for _, c := range lb.streamConnections {
+		backendID, err := lb.lookupTable.Get(c.key)
+		if err != nil {
+			log.Printf("[LoadBalancer] Error getting backend from lookup table: %s", err)
+			continue
+		}
+		if backendID != c.backendID {
+			c.conn.Close()
+		}
+	}
+}
+
+func ConnStateEvent(conn net.Conn, event http.ConnState) {
+	if event == http.StateActive {
+		connections[conn.RemoteAddr().String()] = conn
+	} else if event == http.StateHijacked || event == http.StateClosed {
+		delete(connections, conn.RemoteAddr().String())
+	}
+}
+
+func GetConn(r *http.Request) net.Conn {
+	return connections[r.RemoteAddr]
 }

@@ -77,7 +77,7 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	rootCmd.Flags().String("target-backend-image", "traefik/whoami", "Target backend image for service discovery")
+	rootCmd.Flags().String("target-backend-image", "traefik/whoami", "Actor backend image for service discovery")
 }
 
 // initConfig reads in config file and ENV variables if set.

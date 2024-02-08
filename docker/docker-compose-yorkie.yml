@@ -1,6 +1,7 @@
 version: '3.3'
 
 services:
+#  Run plumber outside docker-compose to use docker API
 #  plumber-proxy:
 #    image: krapi0314/plumber
 #    container_name: plumber

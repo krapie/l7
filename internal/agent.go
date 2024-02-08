@@ -37,9 +37,13 @@ func (s *Agent) Run() error {
 	http.HandleFunc("/yorkie.v1.YorkieService/WatchDocument", s.loadBalancer.ServeProxy)
 	http.HandleFunc("/yorkie.v1.YorkieService/Broadcast", s.loadBalancer.ServeProxy)
 
+	server := &http.Server{
+		Addr:      ":80",
+		ConnState: maglev.ConnStateEvent,
+	}
+
 	log.Printf("[Agent] Starting server on :80")
-	err := http.ListenAndServe(":80", nil)
-	if err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		return err
 	}
 

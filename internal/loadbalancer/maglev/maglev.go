@@ -56,10 +56,11 @@ func (m *Maglev) Add(backend string) error {
 	m.n = uint64(len(m.nodeList))
 	m.generatePopulation()
 	m.populate()
+
 	return nil
 }
 
-// Remove :
+// Remove : Return nil if remove success, otherwise return error
 func (m *Maglev) Remove(backend string) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -175,5 +176,4 @@ func (m *Maglev) populate() {
 		}
 
 	}
-
 }
