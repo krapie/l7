@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Values.yorkie.name }}
     app.kubernetes.io/component: server
     app.kubernetes.io/part-of: {{ .Values.yorkie.name }}
-    app.kubernetes.io/managed-by: istio
+    app.kubernetes.io/managed-by: helm
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "{{ .Values.yorkie.ports.profilingPort }}"

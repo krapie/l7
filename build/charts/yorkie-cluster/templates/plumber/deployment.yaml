@@ -24,15 +24,15 @@ spec:
         app: plumber
         app.kubernetes.io/instance: plumber
     spec:
+      automountServiceAccountToken: true
+      serviceAccountName: plumber
       containers:
       - name: plumber
         image: "{{ .Values.plumber.image.repository }}:{{ .Values.plumber.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.plumber.image.pullPolicy }}
         args: [
-            "--service-discovery",
-            "kubernetes",
-            "--target-backend-image",
-            "yorkieteam/yorkie",
+            "--service-discovery-mode",
+            "k8s",
         ]
         ports:
           - containerPort: 80

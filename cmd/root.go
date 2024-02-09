@@ -36,13 +36,19 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		serviceDiscoveryMode, err := cmd.Flags().GetString("service-discovery-mode")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		targetBackendImage, err := cmd.Flags().GetString("target-backend-image")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		agent, err := internal.NewAgent(targetBackendImage)
+		agent, err := internal.NewAgent(serviceDiscoveryMode, targetBackendImage)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -77,6 +83,7 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+	rootCmd.Flags().String("service-discovery-mode", "docker", "Service discovery mode")
 	rootCmd.Flags().String("target-backend-image", "traefik/whoami", "Actor backend image for service discovery")
 }
 

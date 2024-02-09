@@ -9,7 +9,9 @@ import (
 	"github.com/krapie/plumber/internal/backend/health"
 	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/register/docker"
+	"github.com/krapie/plumber/internal/backend/register/k8s"
 	"github.com/krapie/plumber/internal/backend/registry"
+	"github.com/krapie/plumber/internal/loadbalancer"
 )
 
 type RoundRobinLB struct {
@@ -21,11 +23,21 @@ type RoundRobinLB struct {
 	index int64
 }
 
-func NewLB(targetBackendImage string) (*RoundRobinLB, error) {
+func NewLB(serviceDiscoveryMode, targetBackendImage string) (*RoundRobinLB, error) {
 	backendRegistry := registry.NewRegistry()
-	backendRegister, err := docker.NewRegister()
-	if err != nil {
-		return nil, err
+
+	var backendRegister register.Register
+	var err error
+	if serviceDiscoveryMode == loadbalancer.DiscoveryModeK8s {
+		backendRegister, err = k8s.NewRegister()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		backendRegister, err = docker.NewRegister()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	backendRegister.SetTarget(targetBackendImage)

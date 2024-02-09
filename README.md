@@ -59,6 +59,30 @@ npm run dev
 make docker-compose-yorkie-down
 ```
 
+Yorkie usage with Kubernetes:
+
+```bash
+# Start minikube with ingress addon
+minikube start
+minikube addons enable ingress
+
+# Install Yorkie cluster with helm chart
+helm install yorkie-cluster ./build/charts/yorkie-cluster
+
+# Expose Yorkie cluster with Minikube tunnel
+minikube tunnel
+
+# Test with yorkie-js-sdk
+git clone https://github.com/yorkie-team/yorkie-js-sdk.git
+cd yorkie-js-sdk
+npm install
+sed -i html 's#http://localhost:8080#http://localhost#g' ./public/index.html
+npm run dev
+
+# Cleanup the minikube
+minikube delete
+```
+
 ## Roadmap
 
 Plumber aims to support [Yorkie](https://github.com/yorkie-team/yorkie) as a backend for the load balancer.
@@ -75,11 +99,7 @@ The following features are planned to be implemented first:
 - [x] Support backend service discovery with Docker API
 - [x] Support mechanism to resolve split-brain of long-lived connection
 
-### v0.3.0
+### v0.3.x
 
-- [ ] Support interceptor to modify request/response
-- [ ] Support service discovery with Kubernetes API
-
-### v0.x.x
-
+- [x] Support backend service discovery with Kubernetes API
 - [ ] TBD

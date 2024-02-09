@@ -4,11 +4,14 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/krapie/plumber/internal/backend/health"
 	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/register/docker"
+	"github.com/krapie/plumber/internal/backend/register/k8s"
 	"github.com/krapie/plumber/internal/backend/registry"
+	"github.com/krapie/plumber/internal/loadbalancer"
 )
 
 const (
@@ -32,16 +35,25 @@ type MaglevLB struct {
 	streamConnections []*Connection
 }
 
-func NewLB(targetBackendImage string) (*MaglevLB, error) {
+func NewLB(serviceDiscoveryMode, targetBackendImage string) (*MaglevLB, error) {
 	lookupTable, err := NewMaglev([]string{}, MinVirtualNodes)
 	if err != nil {
 		return nil, err
 	}
 
 	backendRegistry := registry.NewRegistry()
-	backendRegister, err := docker.NewRegister()
-	if err != nil {
-		return nil, err
+
+	var backendRegister register.Register
+	if serviceDiscoveryMode == loadbalancer.DiscoveryModeK8s {
+		backendRegister, err = k8s.NewRegister()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		backendRegister, err = docker.NewRegister()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	lb := &MaglevLB{
@@ -100,6 +112,7 @@ func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	log.Printf("[LoadBalancer] Time: %s URL: %s Backend: %s", time.Now().Format(time.RFC3339), req.URL, b.ID)
 	b.Serve(rw, req)
 }
 

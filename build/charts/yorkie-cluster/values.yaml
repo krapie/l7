@@ -33,7 +33,7 @@ mongodb:
   
 # Configuration for plumber LB
 plumber:
-  namespace: mongodb
+  namespace: plumber
 
   image:
     repository: krapi0314/plumber

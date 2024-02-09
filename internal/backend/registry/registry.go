@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrIndexOutOfRange = errors.New("index out of range")
+	ErrIndexOutOfRange      = errors.New("index out of range")
+	ErrBackendAlreadyExists = errors.New("backend already exists")
 )
 
 type BackendRegistry struct {
@@ -48,6 +49,10 @@ func (s *BackendRegistry) GetBackendByIndex(index int64) (*backend.Backend, erro
 }
 
 func (s *BackendRegistry) AddBackend(hostname, addr string) error {
+	if _, ok := s.GetBackendByID(hostname); ok {
+		return ErrBackendAlreadyExists
+	}
+
 	b, err := backend.NewDefaultBackend(hostname, addr)
 	if err != nil {
 		return err

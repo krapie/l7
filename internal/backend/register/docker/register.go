@@ -2,7 +2,6 @@ package docker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 
@@ -14,16 +13,6 @@ import (
 
 	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/registry"
-)
-
-// TODO(krapie): we termporay use this image for testing, but we can make it configurable
-const (
-	SCHEME = "http"
-	IP     = "0.0.0.0"
-)
-
-var (
-	ErrRegistryNotSet = errors.New("registry not set")
 )
 
 type Register struct {
@@ -61,7 +50,7 @@ func (r *Register) SetRegistry(registry *registry.BackendRegistry) {
 
 func (r *Register) Initialize() error {
 	if r.ServiceRegistry == nil {
-		return ErrRegistryNotSet
+		return register.ErrRegistryNotSet
 	}
 
 	containerList, err := r.DockerClient.ContainerList(context.Background(), container.ListOptions{
@@ -76,7 +65,10 @@ func (r *Register) Initialize() error {
 
 	// TODO(krapie): we set the address to localhost for now, but we can make it configurable
 	for _, c := range containerList {
-		err = r.ServiceRegistry.AddBackend(c.ID, fmt.Sprintf("%s://%s:%d", SCHEME, IP, c.Ports[0].PublicPort))
+		err = r.ServiceRegistry.AddBackend(
+			c.ID,
+			fmt.Sprintf("%s://%s:%d", register.SCHEME, register.IP, c.Ports[0].PublicPort),
+		)
 		if err != nil {
 			return err
 		}
@@ -127,7 +119,7 @@ func (r *Register) observe() {
 
 				err = r.ServiceRegistry.AddBackend(
 					c[0].ID,
-					fmt.Sprintf("%s://%s:%d", SCHEME, c[0].Ports[0].IP, c[0].Ports[0].PublicPort),
+					fmt.Sprintf("%s://%s:%d", register.SCHEME, c[0].Ports[0].IP, c[0].Ports[0].PublicPort),
 				)
 				if err != nil {
 					log.Printf("[Register] Error adding backend: %s", err)

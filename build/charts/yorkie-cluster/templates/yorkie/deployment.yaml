@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/version: {{ .Values.yorkie.image.tag | default .Chart.AppVersion }}
     app.kubernetes.io/component: server
     app.kubernetes.io/part-of: {{ .Values.yorkie.name }}
-    app.kubernetes.io/managed-by: istio
+    app.kubernetes.io/managed-by: helm
     version: {{ .Values.yorkie.image.tag | default .Chart.AppVersion }}
 spec:
   {{ if not .Values.yorkie.autoscaling.enabled }}
