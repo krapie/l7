@@ -33,6 +33,8 @@ spec:
         args: [
             "--service-discovery-mode",
             "k8s",
+            "--target-filter",
+            "yorkie"
         ]
         ports:
           - containerPort: 80

@@ -21,7 +21,7 @@ type Register struct {
 	ServiceRegistry *registry.BackendRegistry
 	EventChannel    chan register.BackendEvent
 
-	Target string
+	TargetFilter string
 }
 
 func NewRegister() (*Register, error) {
@@ -46,8 +46,8 @@ func (r *Register) GetEventChannel() chan register.BackendEvent {
 	return r.EventChannel
 }
 
-func (r *Register) SetTarget(target string) {
-	r.Target = target
+func (r *Register) SetTargetFilter(targetFilter string) {
+	r.TargetFilter = targetFilter
 }
 
 func (r *Register) SetRegistry(registry *registry.BackendRegistry) {
@@ -93,8 +93,8 @@ func (r *Register) Observe() {
 }
 
 func (r *Register) observe() {
-	podWatcher, err := r.client.CoreV1().Pods("yorkie").Watch(context.TODO(), metav1.ListOptions{
-		LabelSelector: labels.Set(map[string]string{"app.kubernetes.io/instance": "yorkie"}).AsSelector().String(),
+	podWatcher, err := r.client.CoreV1().Pods(r.TargetFilter).Watch(context.TODO(), metav1.ListOptions{
+		LabelSelector: labels.Set(map[string]string{"app.kubernetes.io/instance": r.TargetFilter}).AsSelector().String(),
 	})
 	if err != nil {
 		log.Println("[Register] Error:", err)

@@ -12,9 +12,9 @@ type Agent struct {
 	loadBalancer loadbalancer.LoadBalancer
 }
 
-func NewAgent(serviceDiscoveryMode, targetBackendImage string) (*Agent, error) {
+func NewAgent(serviceDiscoveryMode, targetFilter string) (*Agent, error) {
 	// TODO(krapie): we fix LB configuration maglev for now, but we can make it configurable
-	loadBalancer, err := maglev.NewLB(serviceDiscoveryMode, targetBackendImage)
+	loadBalancer, err := maglev.NewLB(serviceDiscoveryMode, targetFilter)
 	if err != nil {
 		return nil, err
 	}

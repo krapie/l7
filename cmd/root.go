@@ -42,13 +42,13 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		targetBackendImage, err := cmd.Flags().GetString("target-backend-image")
+		targetFilter, err := cmd.Flags().GetString("target-filter")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		agent, err := internal.NewAgent(serviceDiscoveryMode, targetBackendImage)
+		agent, err := internal.NewAgent(serviceDiscoveryMode, targetFilter)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -84,7 +84,7 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.Flags().String("service-discovery-mode", "docker", "Service discovery mode")
-	rootCmd.Flags().String("target-backend-image", "traefik/whoami", "Actor backend image for service discovery")
+	rootCmd.Flags().String("target-filter", "traefik/whoami", "Backend target filter for service discovery")
 }
 
 // initConfig reads in config file and ENV variables if set.

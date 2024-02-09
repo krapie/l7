@@ -20,7 +20,7 @@ type Register struct {
 	ServiceRegistry *registry.BackendRegistry
 	EventChannel    chan register.BackendEvent
 
-	Target string
+	TargetFilter string
 }
 
 func NewRegister() (*Register, error) {
@@ -40,8 +40,8 @@ func (r *Register) GetEventChannel() chan register.BackendEvent {
 	return r.EventChannel
 }
 
-func (r *Register) SetTarget(target string) {
-	r.Target = target
+func (r *Register) SetTargetFilter(targetFilter string) {
+	r.TargetFilter = targetFilter
 }
 
 func (r *Register) SetRegistry(registry *registry.BackendRegistry) {
@@ -56,7 +56,7 @@ func (r *Register) Initialize() error {
 	containerList, err := r.DockerClient.ContainerList(context.Background(), container.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("status", "running"),
-			filters.Arg("ancestor", r.Target),
+			filters.Arg("ancestor", r.TargetFilter),
 		),
 	})
 	if err != nil {
@@ -91,7 +91,7 @@ func (r *Register) observe() {
 	msgCh, errCh := r.DockerClient.Events(context.Background(), types.EventsOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("type", "container"),
-			filters.Arg("image", r.Target),
+			filters.Arg("image", r.TargetFilter),
 			filters.Arg("event", "start"),
 			filters.Arg("event", "kill"),
 		),

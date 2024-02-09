@@ -23,7 +23,7 @@ type RoundRobinLB struct {
 	index int64
 }
 
-func NewLB(serviceDiscoveryMode, targetBackendImage string) (*RoundRobinLB, error) {
+func NewLB(serviceDiscoveryMode, targetFilter string) (*RoundRobinLB, error) {
 	backendRegistry := registry.NewRegistry()
 
 	var backendRegister register.Register
@@ -40,7 +40,7 @@ func NewLB(serviceDiscoveryMode, targetBackendImage string) (*RoundRobinLB, erro
 		}
 	}
 
-	backendRegister.SetTarget(targetBackendImage)
+	backendRegister.SetTargetFilter(targetFilter)
 	backendRegister.SetRegistry(backendRegistry)
 	err = backendRegister.Initialize()
 	if err != nil {

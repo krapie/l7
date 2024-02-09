@@ -35,7 +35,7 @@ type MaglevLB struct {
 	streamConnections []*Connection
 }
 
-func NewLB(serviceDiscoveryMode, targetBackendImage string) (*MaglevLB, error) {
+func NewLB(serviceDiscoveryMode, targetFilter string) (*MaglevLB, error) {
 	lookupTable, err := NewMaglev([]string{}, MinVirtualNodes)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func NewLB(serviceDiscoveryMode, targetBackendImage string) (*MaglevLB, error) {
 	}
 	lb.RunWatchEventLoop()
 
-	backendRegister.SetTarget(targetBackendImage)
+	backendRegister.SetTargetFilter(targetFilter)
 	backendRegister.SetRegistry(backendRegistry)
 	err = backendRegister.Initialize()
 	if err != nil {

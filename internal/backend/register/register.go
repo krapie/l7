@@ -25,7 +25,7 @@ type BackendEvent struct {
 }
 
 type Register interface {
-	SetTarget(target string)
+	SetTargetFilter(targetFilter string)
 	SetRegistry(registry *registry.BackendRegistry)
 	GetEventChannel() chan BackendEvent
 	Initialize() error
