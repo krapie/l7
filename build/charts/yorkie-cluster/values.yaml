@@ -1,0 +1,63 @@
+# Configuration for Yorkie cluster
+yorkie:
+  name: yorkie
+  namespace: &namespace yorkie
+
+  autoscaling:
+    enabled: false
+    replicaCount: 3
+
+  image:
+    repository: yorkieteam/yorkie
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  args:
+    dbUrl: mongodb.mongodb.svc.cluster.local
+    dbPort: &mongoPort 27017
+
+  ports:
+    rpcPort: 8080
+    profilingPort: 8081
+
+  resources: {}
+
+# Configuration for internal mongoDB
+mongodb:
+  enabled: true
+
+  port: *mongoPort
+
+  storageClassName: standard
+  storageSize: 1Gi
+  
+# Configuration for plumber LB
+plumber:
+  namespace: mongodb
+
+  image:
+    repository: krapi0314/plumber
+    pullPolicy: Always
+    tag: "latest"
+
+  consistentHash:
+    hashParameter: "x-shard-key"
+
+    maglev:
+      tableSize: 65537
+
+  resources: {}
+
+# Configuration for ingress (eg: AWS ALB)
+ingress:
+  ingressClassName: nginx
+  ## Set to alb if you are using AWS ALB
+  # ingressClassName: alb
+
+  hosts:
+    enabled: false
+    apiHost: api.yorkie.dev
+    
+  alb:
+    enabled: false
+    certArn: arn:aws:acm:ap-northeast-2:123412341234:certificate/1234-1234-1234-1234-1234

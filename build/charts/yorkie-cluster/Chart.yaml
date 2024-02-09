@@ -1,0 +1,22 @@
+apiVersion: v2
+name: yorkie-cluster
+description: yorkie-cluster provides cluster mode for Yorkie server to handle large amount of workloads with ensuring high availability, reliability, and scalability.
+type: application
+icon: https://raw.githubusercontent.com/yorkie-team/yorkie-team.github.io/main/public/favicon-512x512.png
+maintainers:
+  - name: hackerwins
+    email: susukang98@gmail.com
+  - name: krapie
+    email: krapi0314@gmail.com
+
+sources:
+  - https://github.com/yorkie-team/yorkie
+version: 0.4.14
+appVersion: "0.4.14"
+kubeVersion: ">=1.24.0-0"
+
+keywords:
+  - yorkie
+  - cluster
+  - kubernetes
+  - plumber

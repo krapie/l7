@@ -1,17 +1,17 @@
-build:
+.PHONY build:
 	CGO_ENABLED=0 go build -o ./bin/plumber .
 
-docker-build:
+.PHONY docker-build:
 	docker build --push -t krapi0314/plumber .
 
-docker-compose-up:
+.PHONY docker-compose-up:
 	docker-compose -f ./docker/docker-compose.yml up --build -d
 
-docker-compose-down:
+.PHONY docker-compose-down:
 	docker-compose -f ./docker/docker-compose.yml down
 
-docker-compose-yorkie-up:
+.PHONY docker-compose-yorkie-up:
 	docker-compose -f ./docker/docker-compose-yorkie.yml up --build -d
 
-docker-compose-yorkie-down:
+.PHONY docker-compose-yorkie-down:
 	docker-compose -f ./docker/docker-compose-yorkie.yml down

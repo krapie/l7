@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.yorkie.name }}
+  namespace: {{ .Values.plumber.namespace }}
+  {{ if .Values.ingress.alb.enabled }}
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Set alb.ingress.kubernetes.io/certificate-arn annotation to TLS certificate's ARN issued in AWS ACM 
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.alb.certArn }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/backend-protocol-version: HTTP2
+    alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.hosts.apiHost }}
+    alb.ingress.kubernetes.io/group.order: '10'
+  {{ end }}
+spec:
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  rules:
+    {{ if .Values.ingress.hosts.enabled }}
+    - host: {{ .Values.ingress.hosts.apiHost }}
+      http:
+    {{ end }}
+    {{ if not .Values.ingress.hosts.enabled }}
+    - http:
+    {{ end }}
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.yorkie.name }}-plumber
+                port:
+                  number: 80

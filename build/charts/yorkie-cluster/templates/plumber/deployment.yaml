@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.yorkie.name }}-plumber
+  namespace: {{ .Values.plumber.namespace }}
+  labels:
+    app: plumber
+    app.kubernetes.io/name: plumber
+    app.kubernetes.io/instance: plumber
+    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: plumber
+    app.kubernetes.io/managed-by: helm
+spec:
+  {{ if not .Values.yorkie.autoscaling.enabled }}
+  replicas: 1
+  {{ end }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: plumber
+  template:
+    metadata:
+      labels:
+        app: plumber
+        app.kubernetes.io/instance: plumber
+    spec:
+      containers:
+      - name: plumber
+        image: "{{ .Values.plumber.image.repository }}:{{ .Values.plumber.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.plumber.image.pullPolicy }}
+        args: [
+            "--service-discovery",
+            "kubernetes",
+            "--target-backend-image",
+            "yorkieteam/yorkie",
+        ]
+        ports:
+          - containerPort: 80
+        resources: {}
