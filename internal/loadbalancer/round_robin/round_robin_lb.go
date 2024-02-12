@@ -55,7 +55,7 @@ func NewLB(config *Config) (*RoundRobinLB, error) {
 	backendRegister.Observe()
 	log.Printf("[LoadBalancer] Running backend register")
 
-	healthChecker := health.NewHealthChecker(backendRegistry, 2)
+	healthChecker := health.NewHealthChecker(backendRegistry, backendRegister, 2)
 	healthChecker.Run()
 	log.Printf("[LoadBalancer] Running health check")
 

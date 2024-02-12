@@ -1,11 +1,13 @@
 package maglev
 
 import (
+	"errors"
 	"log"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/krapie/plumber/internal/backend"
 	"github.com/krapie/plumber/internal/backend/health"
 	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/register/docker"
@@ -83,7 +85,7 @@ func NewLB(config *Config) (*MaglevLB, error) {
 	backendRegister.Observe()
 	log.Printf("[LoadBalancer] Running backend register")
 
-	healthChecker := health.NewHealthChecker(backendRegistry, 2)
+	healthChecker := health.NewHealthChecker(backendRegistry, backendRegister, 2)
 	healthChecker.Run()
 	log.Printf("[LoadBalancer] Running health check")
 
@@ -99,12 +101,44 @@ func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 		key = "default"
 	}
 
-	backendID, err := lb.lookupTable.Get(key)
+	b, err := lb.chooseBackend(key)
 	if err != nil {
-		http.Error(rw, "Error getting backend", http.StatusInternalServerError)
+		http.Error(rw, "[LoadBalancer] Backend not found", http.StatusServiceUnavailable)
 		return
 	}
 
+	lb.getWatchConnection(req, key, b.ID)
+
+	log.Printf("[LoadBalancer] Time: %s URL: %s Backend: %s", time.Now().Format(time.RFC3339), req.URL, b.ID)
+	b.Serve(rw, req)
+}
+
+func (lb *MaglevLB) chooseBackend(key string) (*backend.Backend, error) {
+	for i := 0; i < lb.backendRegistry.Len(); i++ {
+		backendID, err := lb.lookupTable.Get(key)
+		if err != nil {
+			return nil, err
+		}
+
+		b, exists := lb.backendRegistry.GetBackendByID(backendID)
+		if !exists {
+			return nil, errors.New("backend not found")
+		}
+
+		if b.IsAlive() {
+			return b, nil
+		}
+
+		err = lb.lookupTable.Remove(backendID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, errors.New("no backends available")
+}
+
+func (lb *MaglevLB) getWatchConnection(req *http.Request, key string, backendID string) {
 	if req.URL.Path == "/yorkie.v1.YorkieService/WatchDocument" {
 		conn := GetConn(req)
 		lb.streamConnections = append(lb.streamConnections, &Connection{
@@ -113,15 +147,6 @@ func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 			backendID: backendID,
 		})
 	}
-
-	b, exists := lb.backendRegistry.GetBackendByID(backendID)
-	if !exists {
-		http.Error(rw, "No backends available", http.StatusServiceUnavailable)
-		return
-	}
-
-	log.Printf("[LoadBalancer] Time: %s URL: %s Backend: %s", time.Now().Format(time.RFC3339), req.URL, b.ID)
-	b.Serve(rw, req)
 }
 
 func (lb *MaglevLB) RunWatchEventLoop() {

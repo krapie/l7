@@ -34,7 +34,7 @@ spec:
             "--service-discovery-mode",
             "k8s",
             "--target-filter",
-            "yorkie"
+            "yorkie",
             "--maglev-hash-key",
             "X-Shard-Key"
         ]

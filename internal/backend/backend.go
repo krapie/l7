@@ -1,10 +1,12 @@
 package backend
 
 import (
+	"context"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sync"
+	"time"
 )
 
 const (
@@ -29,6 +31,16 @@ func NewDefaultBackend(ID, addr string) (*Backend, error) {
 
 	proxy := httputil.NewSingleHostReverseProxy(parsedAddr)
 	proxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
+		retries := getRetryFromContext(req)
+		if retries < 3 {
+			select {
+			case <-time.After(100 * time.Millisecond):
+				req = setRetryToContext(req, retries+1)
+				proxy.ServeHTTP(rw, req)
+				return
+			}
+		}
+
 		http.Error(rw, "Error occurred while processing request", http.StatusBadGateway)
 	}
 
@@ -58,4 +70,18 @@ func (b *Backend) IsAlive() bool {
 	b.mutex.RUnlock()
 
 	return alive
+}
+
+func getRetryFromContext(req *http.Request) int {
+	retries := req.Context().Value("retries")
+	if retries == nil {
+		return 0
+	}
+
+	return retries.(int)
+}
+
+func setRetryToContext(req *http.Request, retries int) *http.Request {
+	ctx := context.WithValue(req.Context(), "retries", retries)
+	return req.WithContext(ctx)
 }

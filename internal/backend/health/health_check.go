@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/krapie/plumber/internal/backend"
+	"github.com/krapie/plumber/internal/backend/register"
 	"github.com/krapie/plumber/internal/backend/registry"
 )
 
@@ -13,13 +14,17 @@ const TCP = "tcp"
 
 type Checker struct {
 	backendRegistry *registry.BackendRegistry
-	interval        int
+	backendRegister register.Register
+
+	interval int
 }
 
-func NewHealthChecker(registry *registry.BackendRegistry, interval int) *Checker {
+func NewHealthChecker(registry *registry.BackendRegistry, register register.Register, interval int) *Checker {
 	return &Checker{
 		backendRegistry: registry,
-		interval:        interval,
+		backendRegister: register,
+
+		interval: interval,
 	}
 }
 
@@ -41,10 +46,18 @@ func (c *Checker) healthCheck() {
 func (c *Checker) checkBackendLiveness() {
 	for _, b := range c.backendRegistry.GetBackends() {
 		isAlive := c.checkTCPConnection(b.Addr, c.interval)
-		if isAlive {
+		if isAlive && !b.IsAlive() {
 			b.SetAlive(backend.ALIVE_UP)
-		} else {
+			c.backendRegister.GetEventChannel() <- register.BackendEvent{
+				EventType: register.BackendAddedEvent,
+				Actor:     b.ID,
+			}
+		} else if !isAlive {
 			b.SetAlive(backend.ALIVE_DOWN)
+			c.backendRegister.GetEventChannel() <- register.BackendEvent{
+				EventType: register.BackendRemovedEvent,
+				Actor:     b.ID,
+			}
 		}
 		// log.Printf("[Health] Backend %s is %v", b.Addr, b.IsAlive())
 	}
