@@ -8,13 +8,24 @@ import (
 	"github.com/krapie/plumber/internal/loadbalancer/maglev"
 )
 
-type Agent struct {
-	loadBalancer loadbalancer.LoadBalancer
+type Config struct {
+	ServiceDiscoveryMode string
+	TargetFilter         string
+	MaglevHashKey        string
 }
 
-func NewAgent(serviceDiscoveryMode, targetFilter string) (*Agent, error) {
+type Agent struct {
+	loadBalancer loadbalancer.LoadBalancer
+	Config       *Config
+}
+
+func NewAgent(config *Config) (*Agent, error) {
 	// TODO(krapie): we fix LB configuration maglev for now, but we can make it configurable
-	loadBalancer, err := maglev.NewLB(serviceDiscoveryMode, targetFilter)
+	loadBalancer, err := maglev.NewLB(&maglev.Config{
+		ServiceDiscoveryMode: config.ServiceDiscoveryMode,
+		TargetFilter:         config.TargetFilter,
+		MaglevHashKey:        config.MaglevHashKey,
+	})
 	if err != nil {
 		return nil, err
 	}

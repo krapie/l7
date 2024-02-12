@@ -27,15 +27,22 @@ type Connection struct {
 	backendID string
 }
 
+type Config struct {
+	ServiceDiscoveryMode string
+	TargetFilter         string
+	MaglevHashKey        string
+}
+
 type MaglevLB struct {
 	backendRegistry *registry.BackendRegistry
 	backendRegister register.Register
 
+	hashKey           string
 	lookupTable       *Maglev
 	streamConnections []*Connection
 }
 
-func NewLB(serviceDiscoveryMode, targetFilter string) (*MaglevLB, error) {
+func NewLB(config *Config) (*MaglevLB, error) {
 	lookupTable, err := NewMaglev([]string{}, MinVirtualNodes)
 	if err != nil {
 		return nil, err
@@ -44,7 +51,7 @@ func NewLB(serviceDiscoveryMode, targetFilter string) (*MaglevLB, error) {
 	backendRegistry := registry.NewRegistry()
 
 	var backendRegister register.Register
-	if serviceDiscoveryMode == loadbalancer.DiscoveryModeK8s {
+	if config.ServiceDiscoveryMode == loadbalancer.DiscoveryModeK8s {
 		backendRegister, err = k8s.NewRegister()
 		if err != nil {
 			return nil, err
@@ -60,12 +67,13 @@ func NewLB(serviceDiscoveryMode, targetFilter string) (*MaglevLB, error) {
 		backendRegistry: backendRegistry,
 		backendRegister: backendRegister,
 
+		hashKey:           config.MaglevHashKey,
 		lookupTable:       lookupTable,
 		streamConnections: []*Connection{},
 	}
 	lb.RunWatchEventLoop()
 
-	backendRegister.SetTargetFilter(targetFilter)
+	backendRegister.SetTargetFilter(config.TargetFilter)
 	backendRegister.SetRegistry(backendRegistry)
 	err = backendRegister.Initialize()
 	if err != nil {
@@ -86,7 +94,7 @@ func NewLB(serviceDiscoveryMode, targetFilter string) (*MaglevLB, error) {
 // keep in mind that this function and its sub functions need to be thread safe
 func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 	// TODO(krapie): Move key extraction from http request header to separate system
-	key := req.Header.Get("X-Shard-Key")
+	key := req.Header.Get(lb.hashKey)
 	if key == "" {
 		key = "default"
 	}

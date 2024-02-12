@@ -35,6 +35,8 @@ spec:
             "k8s",
             "--target-filter",
             "yorkie"
+            "--maglev-hash-key",
+            "X-Shard-Key"
         ]
         ports:
           - containerPort: 80

@@ -14,6 +14,11 @@ import (
 	"github.com/krapie/plumber/internal/loadbalancer"
 )
 
+type Config struct {
+	ServiceDiscoveryMode string
+	TargetFilter         string
+}
+
 type RoundRobinLB struct {
 	backendRegistry *registry.BackendRegistry
 	backendRegister register.Register
@@ -23,12 +28,12 @@ type RoundRobinLB struct {
 	index int64
 }
 
-func NewLB(serviceDiscoveryMode, targetFilter string) (*RoundRobinLB, error) {
+func NewLB(config *Config) (*RoundRobinLB, error) {
 	backendRegistry := registry.NewRegistry()
 
 	var backendRegister register.Register
 	var err error
-	if serviceDiscoveryMode == loadbalancer.DiscoveryModeK8s {
+	if config.ServiceDiscoveryMode == loadbalancer.DiscoveryModeK8s {
 		backendRegister, err = k8s.NewRegister()
 		if err != nil {
 			return nil, err
@@ -40,7 +45,7 @@ func NewLB(serviceDiscoveryMode, targetFilter string) (*RoundRobinLB, error) {
 		}
 	}
 
-	backendRegister.SetTargetFilter(targetFilter)
+	backendRegister.SetTargetFilter(config.TargetFilter)
 	backendRegister.SetRegistry(backendRegistry)
 	err = backendRegister.Initialize()
 	if err != nil {

@@ -48,7 +48,17 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		agent, err := internal.NewAgent(serviceDiscoveryMode, targetFilter)
+		maglevHashKey, err := cmd.Flags().GetString("maglev-hash-key")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		agent, err := internal.NewAgent(&internal.Config{
+			ServiceDiscoveryMode: serviceDiscoveryMode,
+			TargetFilter:         targetFilter,
+			MaglevHashKey:        maglevHashKey,
+		})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -85,6 +95,7 @@ func init() {
 
 	rootCmd.Flags().String("service-discovery-mode", "docker", "Service discovery mode")
 	rootCmd.Flags().String("target-filter", "traefik/whoami", "Backend target filter for service discovery")
+	rootCmd.Flags().String("maglev-hash-key", "X-Shard-Key", "Hash key for maglev consistent hashing")
 }
 
 // initConfig reads in config file and ENV variables if set.
