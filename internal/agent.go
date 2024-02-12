@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -18,7 +19,7 @@ type Agent struct {
 	loadBalancer loadbalancer.LoadBalancer
 	httpServer   *http.Server
 
-	Config *Config
+	shutdownCh chan struct{}
 }
 
 func NewAgent(config *Config) (*Agent, error) {
@@ -52,14 +53,43 @@ func NewAgent(config *Config) (*Agent, error) {
 	return &Agent{
 		loadBalancer: loadBalancer,
 		httpServer:   httpServer,
+
+		shutdownCh: make(chan struct{}),
 	}, nil
 }
 
-func (s *Agent) Run() error {
-	log.Printf("[Agent] Starting server on :80")
-	if err := s.httpServer.ListenAndServe(); err != nil {
+func (s *Agent) Start() error {
+	go func() {
+		log.Printf("[Agent] Starting server on :80")
+		if err := s.httpServer.ListenAndServe(); err != nil {
+			log.Printf("[Agent] Server error: %v", err)
+			return
+		}
+
+		return
+	}()
+
+	return nil
+}
+
+func (s *Agent) Shutdown(graceful bool) error {
+	if graceful {
+		if err := s.httpServer.Shutdown(context.Background()); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := s.httpServer.Close(); err != nil {
 		return err
 	}
 
+	close(s.shutdownCh)
+
 	return nil
+}
+
+func (s *Agent) ShutdownCh() <-chan struct{} {
+	return s.shutdownCh
 }

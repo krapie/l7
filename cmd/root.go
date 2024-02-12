@@ -19,6 +19,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -33,42 +36,86 @@ var rootCmd = &cobra.Command{
 	Use:   "plumber",
 	Short: "Plumber is a L7 load balancer from scratch in Go.",
 	Long:  `Plumber is a L7 load balancer from scratch in Go.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		serviceDiscoveryMode, err := cmd.Flags().GetString("service-discovery-mode")
-		if err != nil {
-			fmt.Println(err)
+		if err := runAgent(cmd, args); err != nil {
+			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
 		}
 
-		targetFilter, err := cmd.Flags().GetString("target-filter")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		maglevHashKey, err := cmd.Flags().GetString("maglev-hash-key")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		agent, err := internal.NewAgent(&internal.Config{
-			ServiceDiscoveryMode: serviceDiscoveryMode,
-			TargetFilter:         targetFilter,
-			MaglevHashKey:        maglevHashKey,
-		})
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		if err = agent.Run(); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		os.Exit(0)
 	},
+}
+
+func runAgent(cmd *cobra.Command, args []string) error {
+	serviceDiscoveryMode, err := cmd.Flags().GetString("service-discovery-mode")
+	if err != nil {
+		return err
+	}
+
+	targetFilter, err := cmd.Flags().GetString("target-filter")
+	if err != nil {
+		return err
+	}
+
+	maglevHashKey, err := cmd.Flags().GetString("maglev-hash-key")
+	if err != nil {
+		return err
+	}
+
+	agent, err := internal.NewAgent(&internal.Config{
+		ServiceDiscoveryMode: serviceDiscoveryMode,
+		TargetFilter:         targetFilter,
+		MaglevHashKey:        maglevHashKey,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err = agent.Start(); err != nil {
+		return err
+	}
+
+	if code := handleSignal(agent); code != 0 {
+		return fmt.Errorf("exit code: %d", code)
+	}
+
+	return nil
+}
+
+func handleSignal(agent *internal.Agent) int {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	var sig os.Signal
+	select {
+	case s := <-sigCh:
+		sig = s
+	case <-agent.ShutdownCh():
+		return 0
+	}
+
+	graceful := false
+	if sig == syscall.SIGINT || sig == syscall.SIGTERM {
+		graceful = true
+	}
+
+	gracefulCh := make(chan struct{})
+	go func() {
+		if err := agent.Shutdown(graceful); err != nil {
+			return
+		}
+		close(gracefulCh)
+	}()
+
+	gracefulTimeout := 5 * time.Second
+	select {
+	case <-sigCh:
+		return 1
+	case <-time.After(gracefulTimeout):
+		return 1
+	case <-gracefulCh:
+		return 0
+	}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
