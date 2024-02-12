@@ -16,7 +16,9 @@ type Config struct {
 
 type Agent struct {
 	loadBalancer loadbalancer.LoadBalancer
-	Config       *Config
+	httpServer   *http.Server
+
+	Config *Config
 }
 
 func NewAgent(config *Config) (*Agent, error) {
@@ -30,31 +32,32 @@ func NewAgent(config *Config) (*Agent, error) {
 		return nil, err
 	}
 
-	return &Agent{
-		loadBalancer: loadBalancer,
-	}, nil
-}
-
-func (s *Agent) Run() error {
-	http.HandleFunc("/", s.loadBalancer.ServeProxy)
+	http.HandleFunc("/", loadBalancer.ServeProxy)
 
 	// TODO(krapie): temporary specify yorkie related path because http.HandleFunc only support exact match
-	http.HandleFunc("/yorkie.v1.YorkieService/ActivateClient", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/DeactivateClient", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/AttachDocument", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/DetachDocument", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/RemoveDocument", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/PushPullChanges", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/WatchDocument", s.loadBalancer.ServeProxy)
-	http.HandleFunc("/yorkie.v1.YorkieService/Broadcast", s.loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/ActivateClient", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/DeactivateClient", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/AttachDocument", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/DetachDocument", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/RemoveDocument", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/PushPullChanges", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/WatchDocument", loadBalancer.ServeProxy)
+	http.HandleFunc("/yorkie.v1.YorkieService/Broadcast", loadBalancer.ServeProxy)
 
-	server := &http.Server{
+	httpServer := &http.Server{
 		Addr:      ":80",
 		ConnState: maglev.ConnStateEvent,
 	}
 
+	return &Agent{
+		loadBalancer: loadBalancer,
+		httpServer:   httpServer,
+	}, nil
+}
+
+func (s *Agent) Run() error {
 	log.Printf("[Agent] Starting server on :80")
-	if err := server.ListenAndServe(); err != nil {
+	if err := s.httpServer.ListenAndServe(); err != nil {
 		return err
 	}
 
