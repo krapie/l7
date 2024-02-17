@@ -3,7 +3,6 @@ package maglev
 import (
 	"errors"
 	"log"
-	"net"
 	"net/http"
 	"time"
 
@@ -20,11 +19,8 @@ const (
 	MinVirtualNodes = 65537
 )
 
-// TODO(krapie): temporary store all connections in global variable
-var connections = make(map[string]net.Conn)
-
 type Connection struct {
-	conn      net.Conn
+	rw        http.ResponseWriter
 	key       string
 	backendID string
 }
@@ -39,9 +35,12 @@ type MaglevLB struct {
 	backendRegistry *registry.BackendRegistry
 	backendRegister register.Register
 
-	hashKey           string
-	lookupTable       *Maglev
-	streamConnections []*Connection
+	hashKey     string
+	lookupTable *Maglev
+	// TODO(krapie): change to support multiple connection in single client
+	// TODO(krapie): handle edge cases where node removal/addition sequence differs
+	// TODO(krapie): handle concurrent map access
+	streamConnections map[string]*Connection
 }
 
 func NewLB(config *Config) (*MaglevLB, error) {
@@ -71,7 +70,7 @@ func NewLB(config *Config) (*MaglevLB, error) {
 
 		hashKey:           config.MaglevHashKey,
 		lookupTable:       lookupTable,
-		streamConnections: []*Connection{},
+		streamConnections: make(map[string]*Connection),
 	}
 	lb.RunWatchEventLoop()
 
@@ -106,8 +105,7 @@ func (lb *MaglevLB) ServeProxy(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "[LoadBalancer] Backend not found", http.StatusServiceUnavailable)
 		return
 	}
-
-	lb.getWatchConnection(req, key, b.ID)
+	lb.storeWatchConnection(rw, req, key, b.ID)
 
 	log.Printf("[LoadBalancer] Time: %s URL: %s Backend: %s", time.Now().Format(time.RFC3339), req.URL, b.ID)
 	b.Serve(rw, req)
@@ -138,14 +136,13 @@ func (lb *MaglevLB) chooseBackend(key string) (*backend.Backend, error) {
 	return nil, errors.New("no backends available")
 }
 
-func (lb *MaglevLB) getWatchConnection(req *http.Request, key string, backendID string) {
+func (lb *MaglevLB) storeWatchConnection(rw http.ResponseWriter, req *http.Request, key string, backendID string) {
 	if req.URL.Path == "/yorkie.v1.YorkieService/WatchDocument" {
-		conn := GetConn(req)
-		lb.streamConnections = append(lb.streamConnections, &Connection{
-			conn:      conn,
+		lb.streamConnections[req.RemoteAddr] = &Connection{
+			rw:        rw,
 			key:       key,
 			backendID: backendID,
-		})
+		}
 	}
 }
 
@@ -170,34 +167,52 @@ func (lb *MaglevLB) watchBackendEvent() {
 				if err != nil {
 					log.Printf("[LoadBalancer] Error removing backend from lookup table: %s", err)
 				}
+				lb.removeConnectionOfRemovedBackend(event.Actor)
 			}
 		}
 	}
 }
 
+func (lb *MaglevLB) removeConnectionOfRemovedBackend(backendID string) {
+	for k, c := range lb.streamConnections {
+		if c.backendID == backendID {
+			delete(lb.streamConnections, k)
+		}
+	}
+}
+
 func (lb *MaglevLB) closeSplitBrainedConnection() {
-	// check connections and close if recalculated maglev hashed output(backend ID)
-	// for the key is different from the connection's backend ID
-	for _, c := range lb.streamConnections {
+	for k, c := range lb.streamConnections {
 		backendID, err := lb.lookupTable.Get(c.key)
 		if err != nil {
 			log.Printf("[LoadBalancer] Error getting backend from lookup table: %s", err)
 			continue
 		}
 		if backendID != c.backendID {
-			c.conn.Close()
+			err = resetConnection(c.rw)
+			if err != nil {
+				log.Printf("[LoadBalancer] Error resetting connection: %s", err)
+				continue
+			}
+			delete(lb.streamConnections, k)
 		}
 	}
 }
 
-func ConnStateEvent(conn net.Conn, event http.ConnState) {
-	if event == http.StateActive {
-		connections[conn.RemoteAddr().String()] = conn
-	} else if event == http.StateHijacked || event == http.StateClosed {
-		delete(connections, conn.RemoteAddr().String())
+func resetConnection(rw http.ResponseWriter) error {
+	hj, ok := rw.(http.Hijacker)
+	if !ok {
+		return errors.New("http.ResponseWriter does not support hijacking")
 	}
-}
+	conn, _, err := hj.Hijack()
+	if err != nil {
+		return err
+	}
 
-func GetConn(r *http.Request) net.Conn {
-	return connections[r.RemoteAddr]
+	err = conn.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

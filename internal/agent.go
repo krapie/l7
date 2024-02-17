@@ -46,8 +46,7 @@ func NewAgent(config *Config) (*Agent, error) {
 	http.HandleFunc("/yorkie.v1.YorkieService/Broadcast", loadBalancer.ServeProxy)
 
 	httpServer := &http.Server{
-		Addr:      ":80",
-		ConnState: maglev.ConnStateEvent,
+		Addr: ":80",
 	}
 
 	return &Agent{
