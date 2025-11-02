@@ -1,15 +1,15 @@
-# plumber
+# l7
 
-Plumber is a L7 load balancer from scratch in Go.
+l7 is a layer 7 load balancer built from scratch in Go.
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/krapie/plumber.git
+git clone https://github.com/krapie/l7.git
 
 # Build the binary
-cd plumber
+cd l7
 make build
 ```
 
@@ -17,7 +17,7 @@ make build
 
 ```bash
 # Start the load balancer
-./bin/plumber
+./bin/l7
 ```
 
 For more usage, see [USAGE.md](./USAGE.md).

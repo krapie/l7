@@ -1,10 +1,10 @@
 version: '3.3'
 
 services:
-#  Run plumber outside docker-compose to use docker API
-#  plumber-proxy:
-#    image: krapi0314/plumber
-#    container_name: plumber
+#  Run l7 outside docker-compose to use docker API
+#  l7-proxy:
+#    image: krapi0314/l7
+#    container_name: l7
 #    command:
 #      - "--backends"
 #      - "http://server-1:80,http://server-2:80,http://server-3:80"
@@ -45,4 +45,4 @@ services:
       - '27017:27017'
 
 networks:
-  plumber:
+  l7:

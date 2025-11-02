@@ -1,4 +1,4 @@
-module github.com/krapie/plumber
+module github.com/krapie/l7
 
 go 1.21.4
 

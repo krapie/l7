@@ -26,16 +26,16 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/krapie/plumber/internal"
+	"github.com/krapie/l7/internal"
 )
 
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "plumber",
-	Short: "Plumber is a L7 load balancer from scratch in Go.",
-	Long:  `Plumber is a L7 load balancer from scratch in Go.`,
+	Use:   "l7",
+	Short: "l7 is a layer 7 load balancer built from scratch in Go.",
+	Long:  `l7 is a layer 7 load balancer built from scratch in Go.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runAgent(cmd, args); err != nil {
 			fmt.Printf("Error: %v\n", err)
@@ -134,7 +134,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.plumber.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.l7.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -155,10 +155,10 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".plumber" (without extension).
+		// Search config in home directory with name ".l7" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".plumber")
+		viper.SetConfigName(".l7")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

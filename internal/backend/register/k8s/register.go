@@ -12,8 +12,8 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/krapie/plumber/internal/backend/register"
-	"github.com/krapie/plumber/internal/backend/registry"
+	"github.com/krapie/l7/internal/backend/register"
+	"github.com/krapie/l7/internal/backend/registry"
 )
 
 type Register struct {

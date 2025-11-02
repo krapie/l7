@@ -11,8 +11,8 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
-	"github.com/krapie/plumber/internal/backend/register"
-	"github.com/krapie/plumber/internal/backend/registry"
+	"github.com/krapie/l7/internal/backend/register"
+	"github.com/krapie/l7/internal/backend/registry"
 )
 
 type Register struct {

@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/krapie/plumber/internal/backend"
-	"github.com/krapie/plumber/internal/backend/health"
-	"github.com/krapie/plumber/internal/backend/register"
-	"github.com/krapie/plumber/internal/backend/register/docker"
-	"github.com/krapie/plumber/internal/backend/register/k8s"
-	"github.com/krapie/plumber/internal/backend/registry"
-	"github.com/krapie/plumber/internal/loadbalancer"
+	"github.com/krapie/l7/internal/backend"
+	"github.com/krapie/l7/internal/backend/health"
+	"github.com/krapie/l7/internal/backend/register"
+	"github.com/krapie/l7/internal/backend/register/docker"
+	"github.com/krapie/l7/internal/backend/register/k8s"
+	"github.com/krapie/l7/internal/backend/registry"
+	"github.com/krapie/l7/internal/loadbalancer"
 )
 
 const (

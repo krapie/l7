@@ -16,8 +16,8 @@ FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
 
-COPY --from=builder /app/bin/plumber /bin/
+COPY --from=builder /app/bin/l7 /bin/
 
 EXPOSE 80 80
 
-ENTRYPOINT ["plumber"]
+ENTRYPOINT ["l7"]

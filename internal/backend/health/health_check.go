@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/krapie/plumber/internal/backend"
-	"github.com/krapie/plumber/internal/backend/register"
-	"github.com/krapie/plumber/internal/backend/registry"
+	"github.com/krapie/l7/internal/backend"
+	"github.com/krapie/l7/internal/backend/register"
+	"github.com/krapie/l7/internal/backend/registry"
 )
 
 const TCP = "tcp"

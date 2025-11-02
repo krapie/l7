@@ -4,19 +4,19 @@
 
 ```bash
 # Start the load balancer
-./bin/plumber
+./bin/l7
 ```
 
 ## Docker Usage
 
-We use Docker Compose to test Plumber.
+We use Docker Compose to test l7.
 
 ```bash
 # Test the load balancer with docker-compose
 make docker-compose-up
 
 # Start the load balancer with target backend image for service discovery
-./bin/plumber --target-backend-image traefik/whoami
+./bin/l7 --target-backend-image traefik/whoami
 
 # Send a request to the load balancer
 chmod +x ./scripts/lb_distribution_test.sh
@@ -28,14 +28,14 @@ make docker-compose-down
 
 ## Docker Usage with Yorkie
 
-We use Docker Compose to test Plumber with Yorkie.
+We use Docker Compose to test l7 with Yorkie.
 
 ```bash
 # Test the load balancer with docker-compose
 make docker-compose-yorkie-up
 
 # Start the load balancer with target backend image for service discovery
-./bin/plumber --target-backend-image yorkieteam/yorkie
+./bin/l7 --target-backend-image yorkieteam/yorkie
 
 # Test with yorkie-js-sdk
 git clone https://github.com/yorkie-team/yorkie-js-sdk.git
@@ -50,7 +50,7 @@ make docker-compose-yorkie-down
 
 ## Kubernetes Usage with Yorkie
 
-We use Minikube to test Plumber with Yorkie.
+We use Minikube to test l7 with Yorkie.
 
 ```bash
 # Start minikube with ingress addon

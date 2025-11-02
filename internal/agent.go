@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/krapie/plumber/internal/loadbalancer"
-	"github.com/krapie/plumber/internal/loadbalancer/maglev"
+	"github.com/krapie/l7/internal/loadbalancer"
+	"github.com/krapie/l7/internal/loadbalancer/maglev"
 )
 
 type Config struct {

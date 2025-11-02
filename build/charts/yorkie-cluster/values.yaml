@@ -31,12 +31,12 @@ mongodb:
   storageClassName: standard
   storageSize: 1Gi
   
-# Configuration for plumber LB
-plumber:
-  namespace: plumber
+# Configuration for l7 LB
+l7:
+  namespace: l7
 
   image:
-    repository: krapi0314/plumber
+    repository: krapi0314/l7
     pullPolicy: Always
     tag: "latest"
 

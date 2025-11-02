@@ -16,7 +16,7 @@ limitations under the License.
 
 package main
 
-import "github.com/krapie/plumber/cmd"
+import "github.com/krapie/l7/cmd"
 
 func main() {
 	cmd.Execute()

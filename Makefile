@@ -1,8 +1,8 @@
 build:
-	CGO_ENABLED=0 go build -o ./bin/plumber .
+	CGO_ENABLED=0 go build -o ./bin/l7 .
 
 docker-build:
-	docker build --push -t krapi0314/plumber .
+	docker build --push -t krapi0314/l7 .
 
 docker-compose-up:
 	docker-compose -f ./docker/docker-compose.yml up --build -d

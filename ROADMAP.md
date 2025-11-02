@@ -1,6 +1,6 @@
 # Roadmap
 
-Plumber aims to support [Yorkie](https://github.com/yorkie-team/yorkie) as a backend for the load balancer.
+l7 aims to support [Yorkie](https://github.com/yorkie-team/yorkie) as a backend for the load balancer.
 The following features are planned to be implemented first:
 
 ### v0.1.0

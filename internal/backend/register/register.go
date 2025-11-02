@@ -3,7 +3,7 @@ package register
 import (
 	"errors"
 
-	"github.com/krapie/plumber/internal/backend/registry"
+	"github.com/krapie/l7/internal/backend/registry"
 )
 
 var (
